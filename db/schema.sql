@@ -35,7 +35,9 @@ CREATE TABLE media_services (
 
 CREATE TABLE customers (
   id SERIAL PRIMARY KEY,
-  username VARCHAR(64) NOT NULL UNIQUE
+  first_name VARCHAR(64) NOT NULL,
+  last_name  VARCHAR(64) NOT NULL,
+  email      VARCHAR(254) NOT NULL UNIQUE
 );
 
 CREATE TABLE subscriptions (

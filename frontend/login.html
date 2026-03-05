@@ -12,7 +12,7 @@
     <div class="login-box">
       <h1>Sign In</h1>
       <form id="login-form">
-        <input type="text" id="username" placeholder="Enter your username" autocomplete="off" required>
+        <input type="email" id="email" placeholder="Enter your email address" autocomplete="email" required>
         <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
       </form>
       <div id="error" class="error"></div>
@@ -22,7 +22,7 @@
   <script src="/app.js"></script>
   <script>
     // If already logged in, go to media list
-    if (getUsername()) {
+    if (getEmail()) {
       window.location.href = '/index.html';
     }
 
@@ -31,20 +31,22 @@
       var errorEl = document.getElementById('error');
       errorEl.textContent = '';
 
-      var username = document.getElementById('username').value.trim();
-      if (!username) return;
+      var email = document.getElementById('email').value.trim();
+      if (!email) return;
 
       try {
-        var res = await fetch(API + '/customers/' + encodeURIComponent(username));
+        var res = await fetch(API + '/customers/' + encodeURIComponent(email));
         if (res.status === 404) {
-          errorEl.textContent = 'Username not found.';
+          errorEl.textContent = 'Email address not found.';
           return;
         }
         if (!res.ok) {
           errorEl.textContent = 'Something went wrong. Please try again.';
           return;
         }
-        sessionStorage.setItem('testflix_username', username);
+        var body = await res.json();
+        sessionStorage.setItem('testflix_email', email);
+        sessionStorage.setItem('testflix_first_name', body.data.first_name);
         window.location.href = '/index.html';
       } catch (err) {
         errorEl.textContent = 'Cannot reach the server.';

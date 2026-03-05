@@ -68,7 +68,7 @@ h2 { font-size: 1.2rem; margin-bottom: 12px; }
 
 .login-box h1 { font-size: 1.4rem; margin-bottom: 20px; }
 
-.login-box input[type="text"] {
+.login-box input[type="email"] {
   width: 100%;
   padding: 12px;
   border: 1px solid #333;
@@ -79,7 +79,7 @@ h2 { font-size: 1.2rem; margin-bottom: 12px; }
   margin-bottom: 16px;
 }
 
-.login-box input[type="text"]:focus {
+.login-box input[type="email"]:focus {
   outline: none;
   border-color: #e50914;
 }

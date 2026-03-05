@@ -33,8 +33,8 @@ func main() {
 	mux.HandleFunc("GET /api/media", handleListMedia)
 	mux.HandleFunc("GET /api/media/{id}", handleGetMedia)
 	mux.HandleFunc("GET /api/services", handleListServices)
-	mux.HandleFunc("GET /api/customers/{username}", handleGetCustomer)
-	mux.HandleFunc("GET /api/customers/{username}/subscriptions", handleListSubscriptions)
+	mux.HandleFunc("GET /api/customers/{email}", handleGetCustomer)
+	mux.HandleFunc("GET /api/customers/{email}/subscriptions", handleListSubscriptions)
 	mux.HandleFunc("PUT /api/subscriptions/{id}", handleUpdateSubscription)
 
 	// Static frontend files
@@ -61,17 +61,17 @@ func pathID(r *http.Request, name string) (int, error) {
 	return strconv.Atoi(r.PathValue(name))
 }
 
-// --- GET /media?username={username} ---
+// --- GET /media?email={email} ---
 
 func handleListMedia(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		jsonError(w, "username query parameter is required", http.StatusBadRequest)
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		jsonError(w, "email query parameter is required", http.StatusBadRequest)
 		return
 	}
 
 	var customerID int
-	err := db.QueryRow("SELECT id FROM customers WHERE username = $1", username).Scan(&customerID)
+	err := db.QueryRow("SELECT id FROM customers WHERE email = $1", email).Scan(&customerID)
 	if err == sql.ErrNoRows {
 		jsonError(w, "customer not found", http.StatusNotFound)
 		return
@@ -208,18 +208,20 @@ func handleListServices(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, services)
 }
 
-// --- GET /customers/{username} ---
+// --- GET /customers/{email} ---
 
 func handleGetCustomer(w http.ResponseWriter, r *http.Request) {
-	username := r.PathValue("username")
+	email := r.PathValue("email")
 
 	type customer struct {
-		ID       int    `json:"id"`
-		Username string `json:"username"`
+		ID        int    `json:"id"`
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
 	}
 
 	var c customer
-	err := db.QueryRow("SELECT id, username FROM customers WHERE username = $1", username).Scan(&c.ID, &c.Username)
+	err := db.QueryRow("SELECT id, first_name, last_name, email FROM customers WHERE email = $1", email).Scan(&c.ID, &c.FirstName, &c.LastName, &c.Email)
 	if err == sql.ErrNoRows {
 		jsonError(w, "customer not found", http.StatusNotFound)
 		return
@@ -231,13 +233,13 @@ func handleGetCustomer(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, c)
 }
 
-// --- GET /customers/{username}/subscriptions ---
+// --- GET /customers/{email}/subscriptions ---
 
 func handleListSubscriptions(w http.ResponseWriter, r *http.Request) {
-	username := r.PathValue("username")
+	email := r.PathValue("email")
 
 	var customerID int
-	err := db.QueryRow("SELECT id FROM customers WHERE username = $1", username).Scan(&customerID)
+	err := db.QueryRow("SELECT id FROM customers WHERE email = $1", email).Scan(&customerID)
 	if err == sql.ErrNoRows {
 		jsonError(w, "customer not found", http.StatusNotFound)
 		return

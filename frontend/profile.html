@@ -9,7 +9,10 @@
 <body>
   <div class="container">
     <h1 id="page-title">Your Account</h1>
-    <p id="username-display" style="color:#e5e5e5; font-size:1.1rem; margin-bottom:20px;"></p>
+    <div id="customer-info" style="margin-bottom:24px;">
+      <p id="customer-name" style="font-size:1.1rem; font-weight:600; margin:0 0 4px;"></p>
+      <p id="customer-email" style="color:#999; font-size:0.9rem; margin:0;"></p>
+    </div>
     <div id="profile" class="profile-section">
       <p class="loading">Loading...</p>
     </div>
@@ -28,21 +31,31 @@
     requireLogin();
     renderNav('profile');
 
-    var username = getUsername();
+    var email = getEmail();
     var currentSub = null;
 
-    document.getElementById('page-title').textContent = username;
-    document.getElementById('username-display').textContent = '';
-
     (async function() {
+      await loadCustomer();
       await loadProfile();
       await loadTiers();
     })();
 
+    async function loadCustomer() {
+      try {
+        var res = await fetch(API + '/customers/' + encodeURIComponent(email));
+        if (!res.ok) return;
+        var body = await res.json();
+        var c = body.data;
+        document.getElementById('page-title').textContent = 'Hello ' + c.first_name;
+        document.getElementById('customer-name').textContent = c.first_name + ' ' + c.last_name;
+        document.getElementById('customer-email').textContent = c.email;
+      } catch (err) {}
+    }
+
     async function loadProfile() {
       var profileEl = document.getElementById('profile');
       try {
-        var subRes = await fetch(API + '/customers/' + encodeURIComponent(username) + '/subscriptions');
+        var subRes = await fetch(API + '/customers/' + encodeURIComponent(email) + '/subscriptions');
         if (!subRes.ok) {
           profileEl.innerHTML = '<p class="error">Failed to load subscriptions.</p>';
           return;

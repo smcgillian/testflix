@@ -22,7 +22,7 @@
     (async function() {
       var grid = document.getElementById('media-grid');
       try {
-        var res = await fetch(API + '/media?username=' + encodeURIComponent(getUsername()));
+        var res = await fetch(API + '/media?email=' + encodeURIComponent(getEmail()));
         if (!res.ok) {
           grid.innerHTML = '<p class="error">Failed to load media.</p>';
           return;

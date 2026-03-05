@@ -1,17 +1,17 @@
 const API = '/api';
 
-function getUsername() {
-  return sessionStorage.getItem('testflix_username');
+function getEmail() {
+  return sessionStorage.getItem('testflix_email');
 }
 
 function requireLogin() {
-  if (!getUsername()) {
+  if (!getEmail()) {
     window.location.href = '/login.html';
   }
 }
 
 function logout() {
-  sessionStorage.removeItem('testflix_username');
+  sessionStorage.removeItem('testflix_email');
   window.location.href = '/login.html';
 }
 

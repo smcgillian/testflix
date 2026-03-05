@@ -30,7 +30,7 @@ See `db/schema.sql` for full DDL. Summary of tables:
 - `classifications` — age ratings: U, PG, PG-13, R
 - `media` — streamable items (title, description, duration, genre, FK to media_type and classification)
 - `media_services` — many-to-many mapping of media to services
-- `customers` — end users (username)
+- `customers` — end users (first_name, last_name, email; email is the unique login identifier)
 - `subscriptions` — which customers subscribe to which services (billing_period, started_at, expires_at)
 
 Entity-Relationship Diagram
@@ -90,7 +90,9 @@ Entity-Relationship Diagram
                        │   customers     │
                        ├─────────────────┤
                        │ id          PK  │
-                       │ username        │
+                       │ first_name      │
+                       │ last_name       │
+                       │ email    UNIQUE │
                        └─────────────────┘
 
 Relationships:
@@ -109,17 +111,17 @@ See `db/seed.sql` for full INSERT statements. Summary:
 - 2 services: TestFlix Premium, TestFlix Standard
 - 4 classifications: U, PG, PG-13, R
 - 2 media types: movie, tvshow
-- 10 media items: 6 movies, 4 TV shows
-- Media-service mapping: all 10 titles on premium, 4 on standard (premium is a superset)
-- 3 customers: alice, bob, carol
-- 3 subscriptions: alice → premium (monthly), bob → standard (yearly), carol → standard (monthly)
+- 30 media items: 20 movies, 10 TV shows
+- Media-service mapping: all 30 on premium; 10 movies + 5 TV shows on standard (premium is a superset)
+- 5 customers: James Wilson, Sarah Chen, Marcus Rivera, Emily Hart, David Kim
+- 5 subscriptions: james/marcus/david → premium, sarah/emily → standard
 
 Access rules (demo behavior)
 
-- All media endpoints require a `username` query parameter. If `username` is missing, return `400 Bad Request`.
+- All media endpoints require an `email` query parameter. If `email` is missing, return `400 Bad Request`.
 - The server looks up the customer's subscriptions and returns only media belonging to those services.
 - Every customer has exactly one active subscription, so the media list is never empty.
-- If the `username` does not match any customer, return `404 Not Found`.
+- If the `email` does not match any customer, return `404 Not Found`.
 - There is no public/anonymous media access.
 
 API Endpoints
@@ -133,15 +135,15 @@ Go tooling, not exposed as REST endpoints.
 
 ---
 
-### GET /api/media?username={username}
+### GET /api/media?email={email}
 
 List media the authenticated user can access based on their subscriptions.
 
 Query parameters:
-- `username` (required) — customer username
+- `email` (required) — customer email address
 
 Logic:
-1. Look up customer by username → 404 if not found
+1. Look up customer by email → 404 if not found
 2. Look up customer's subscriptions → get subscribed service IDs
 3. Query media joined through media_services for those service IDs
 4. Return matched media (customer always has a subscription)
@@ -164,7 +166,7 @@ Response `200`:
 ```
 
 Errors:
-- `400` — `{ "error": "username query parameter is required" }`
+- `400` — `{ "error": "email query parameter is required" }`
 - `404` — `{ "error": "customer not found" }`
 
 ---
@@ -210,16 +212,18 @@ Response `200`:
 
 ---
 
-### GET /api/customers/{username}
+### GET /api/customers/{email}
 
-Get a customer profile by username.
+Get a customer profile by email address.
 
 Response `200`:
 ```json
 {
   "data": {
     "id": 1,
-    "username": "alice"
+    "first_name": "James",
+    "last_name": "Wilson",
+    "email": "james.wilson@example.com"
   }
 }
 ```
@@ -229,7 +233,7 @@ Errors:
 
 ---
 
-### GET /api/customers/{username}/subscriptions
+### GET /api/customers/{email}/subscriptions
 
 List all subscriptions for a customer.
 
@@ -324,7 +328,9 @@ message Media {
 
 message Customer {
   int64 id = 1;
-  string username = 2;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
 }
 
 message Subscription {
@@ -348,7 +354,7 @@ Implementation notes
 - Use `github.com/jackc/pgx/v5` with its stdlib-compatible driver (`pgx/v5/stdlib`) so we get `database/sql` compatibility plus pgx performance.
 - Router: Go standard library `net/http.ServeMux` (Go 1.22+ enhanced routing with method and path-parameter support). No third-party router needed — fewer dependencies, stdlib stability guarantees, and what production-grade Go shops default to.
 - The Go server listens on `:8080`, serving both the API (`/api/...`) and static frontend files (`/`).
-- Authentication is out of scope for now — APIs accept `username` as a parameter to identify the acting customer for demo flows. OAuth will be added later.
+- Authentication is out of scope for now — APIs accept `email` as a parameter to identify the acting customer for demo flows. OAuth will be added later.
 
 Front End
 
@@ -358,13 +364,13 @@ No frameworks. Vanilla JS with `fetch` against the REST API. Pages are separate 
 
 #### Pages
 
-1. **Login** (`login.html`) — Text input for username, submit button. On submit, validate the username exists via `GET /media?username={username}`. If 404, show error. If 200, store username in `sessionStorage` and redirect to the media list.
+1. **Login** (`login.html`) — Email address input, submit button. On submit, validate the email exists via `GET /customers/{email}`. If 404, show error. If 200, store email and first name in `sessionStorage` and redirect to the media list.
 
-2. **Media List** (`index.html`) — Fetch `GET /media?username={username}` and render a list of titles with media type, genre, and classification. Each title links to the media detail page.
+2. **Media List** (`index.html`) — Fetch `GET /media?email={email}` and render a list of titles with media type, genre, and classification. Each title links to the media detail page.
 
 3. **Media Detail** (`media.html?id={id}`) — Fetch `GET /media/{id}` and display title, description, duration, genre, classification, and which services carry it. Include a "Play" button (disabled/non-functional for this demo).
 
-4. **User Profile** (`profile.html`) — Fetch `GET /customers/{id}` and `GET /customers/{id}/subscriptions`. Display username and current subscriptions. Allow the user to:
+4. **User Profile** (`profile.html`) — Fetch `GET /customers/{email}` and `GET /customers/{email}/subscriptions`. Display "Hello [First Name]", full name, email, and current subscription. Allow the user to:
    - Change their subscription to a different service tier (`PUT /subscriptions/{id}`)
    
    Changes take effect immediately — returning to the media list reflects the updated catalogue.
