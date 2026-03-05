@@ -366,7 +366,7 @@ No frameworks. Vanilla JS with `fetch` against the REST API. Pages are separate 
 
 1. **Login** (`login.html`) — Email address input, submit button. On submit, validate the email exists via `GET /customers/{email}`. If 404, show error. If 200, store email and first name in `sessionStorage` and redirect to the media list.
 
-2. **Media List** (`index.html`) — Fetch `GET /media?email={email}` and render a list of titles with media type, genre, and classification. Each title links to the media detail page.
+2. **Media List** (`index.html`) — Fetch `GET /media?email={email}` and render titles grouped into **Movies** and **TV Shows** sections. Each title links to the media detail page.
 
 3. **Media Detail** (`media.html?id={id}`) — Fetch `GET /media/{id}` and display title, description, duration, genre, classification, and which services carry it. Include a "Play" button (disabled/non-functional for this demo).
 
@@ -387,7 +387,7 @@ No frameworks. Vanilla JS with `fetch` against the REST API. Pages are separate 
                     │  Login      │
                     │ login.html  │
                     └──────┬──────┘
-                           │ submit username
+                           │ submit email
                            ▼
                     ┌─────────────┐
                ┌───►│ Media List  │◄───┐
@@ -407,7 +407,7 @@ No frameworks. Vanilla JS with `fetch` against the REST API. Pages are separate 
 ```
 
 Navigation flow:
-- Login → Media List (on successful username entry)
+- Login → Media List (on successful email entry)
 - Media List → Media Detail (click a title)
 - Media Detail → Media List (back / logo)
 - Media List, Media Detail → User Profile (account link)

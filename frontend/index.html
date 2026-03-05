@@ -8,8 +8,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Your Titles</h1>
-    <div id="media-grid" class="media-grid">
+    <div id="media-sections">
       <p class="loading">Loading...</p>
     </div>
   </div>
@@ -20,40 +19,60 @@
     renderNav('list');
 
     (async function() {
-      var grid = document.getElementById('media-grid');
+      var sectionsEl = document.getElementById('media-sections');
       try {
         var res = await fetch(API + '/media?email=' + encodeURIComponent(getEmail()));
         if (!res.ok) {
-          grid.innerHTML = '<p class="error">Failed to load media.</p>';
+          sectionsEl.innerHTML = '<p class="error">Failed to load media.</p>';
           return;
         }
         var body = await res.json();
         var items = body.data;
 
         if (!items || items.length === 0) {
-          grid.innerHTML = '<p>No titles available for your subscription.</p>';
+          sectionsEl.innerHTML = '<p>No titles available for your subscription.</p>';
           return;
         }
 
-        grid.innerHTML = '';
-        items.forEach(function(item) {
-          var card = document.createElement('a');
-          card.href = '/media.html?id=' + item.id;
-          card.className = 'media-card';
-          card.innerHTML =
-            '<h3>' + escapeHtml(item.title) + '</h3>' +
-            '<div class="meta">' +
-              '<span>' + escapeHtml(item.media_type) + '</span>' +
-              '<span>' + escapeHtml(item.genre) + '</span>' +
-              (item.classification ? '<span>' + escapeHtml(item.classification) + '</span>' : '') +
-              (item.duration_seconds ? '<span>' + formatDuration(item.duration_seconds) + '</span>' : '') +
-            '</div>';
-          grid.appendChild(card);
-        });
+        var movies = items.filter(function(i) { return i.media_type === 'movie'; });
+        var shows  = items.filter(function(i) { return i.media_type === 'tvshow'; });
+
+        sectionsEl.innerHTML = '';
+        renderSection(sectionsEl, 'Movies', movies);
+        renderSection(sectionsEl, 'TV Shows', shows);
       } catch (err) {
-        grid.innerHTML = '<p class="error">Cannot reach the server.</p>';
+        sectionsEl.innerHTML = '<p class="error">Cannot reach the server.</p>';
       }
     })();
+
+    function renderSection(parent, title, items) {
+      if (!items.length) return;
+      var h2 = document.createElement('h2');
+      h2.textContent = title;
+      h2.style.marginBottom = '16px';
+      parent.appendChild(h2);
+
+      var grid = document.createElement('div');
+      grid.className = 'media-grid';
+      items.forEach(function(item) {
+        var card = document.createElement('a');
+        card.href = '/media.html?id=' + item.id;
+        card.className = 'media-card';
+        card.innerHTML =
+          '<h3>' + escapeHtml(item.title) + '</h3>' +
+          '<div class="meta">' +
+            '<span>' + escapeHtml(item.genre) + '</span>' +
+            (item.classification ? '<span>' + escapeHtml(item.classification) + '</span>' : '') +
+            (item.duration_seconds ? '<span>' + formatDuration(item.duration_seconds) + '</span>' : '') +
+          '</div>';
+        grid.appendChild(card);
+      });
+      parent.appendChild(grid);
+
+      var spacer = document.createElement('div');
+      spacer.style.marginBottom = '40px';
+      parent.appendChild(spacer);
+    }
 
     function escapeHtml(str) {
       var div = document.createElement('div');
