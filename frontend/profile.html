@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestFlix — Account</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 id="page-title">Your Account</h1>
+    <p id="username-display" style="color:#e5e5e5; font-size:1.1rem; margin-bottom:20px;"></p>
+    <div id="profile" class="profile-section">
+      <p class="loading">Loading...</p>
+    </div>
+
+    <h2>Change Subscription</h2>
+    <div id="tiers" class="profile-section">
+      <p class="loading">Loading...</p>
+    </div>
+    <div id="status" class="error"></div>
+    <br>
+    <a href="/index.html">&larr; Back to titles</a>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireLogin();
+    renderNav('profile');
+
+    var username = getUsername();
+    var currentSub = null;
+
+    document.getElementById('page-title').textContent = username;
+    document.getElementById('username-display').textContent = '';
+
+    (async function() {
+      await loadProfile();
+      await loadTiers();
+    })();
+
+    async function loadProfile() {
+      var profileEl = document.getElementById('profile');
+      try {
+        var subRes = await fetch(API + '/customers/' + encodeURIComponent(username) + '/subscriptions');
+        if (!subRes.ok) {
+          profileEl.innerHTML = '<p class="error">Failed to load subscriptions.</p>';
+          return;
+        }
+        var subBody = await subRes.json();
+        var subs = subBody.data;
+
+        if (subs && subs.length > 0) {
+          currentSub = subs[0];
+          var billing = currentSub.billing_period === 1 ? 'Monthly' : 'Yearly';
+          profileEl.innerHTML =
+            '<div class="subscription-item">' +
+              '<div class="sub-info">' +
+                '<span class="name">' + escapeHtml(currentSub.service_name) + '</span>' +
+                '<span class="detail">' + billing + ' &middot; Since ' + new Date(currentSub.started_at).toLocaleDateString() + '</span>' +
+              '</div>' +
+            '</div>';
+        } else {
+          profileEl.innerHTML = '<p>No active subscription.</p>';
+        }
+      } catch (err) {
+        profileEl.innerHTML = '<p class="error">Cannot reach the server.</p>';
+      }
+    }
+
+    async function loadTiers() {
+      var tiersEl = document.getElementById('tiers');
+      try {
+        var res = await fetch(API + '/services');
+        if (!res.ok) {
+          tiersEl.innerHTML = '<p class="error">Failed to load service tiers.</p>';
+          return;
+        }
+        var body = await res.json();
+        var services = body.data;
+
+        tiersEl.innerHTML = '<div class="tier-select" id="tier-select"></div>';
+        var selectEl = document.getElementById('tier-select');
+
+        services.forEach(function(svc) {
+          var isActive = currentSub && currentSub.service_id === svc.id;
+          var option = document.createElement('div');
+          option.className = 'tier-option' + (isActive ? ' active' : '');
+          option.innerHTML =
+            '<h3>' + escapeHtml(svc.name) + '</h3>' +
+            '<p>' + escapeHtml(svc.type) + '</p>';
+
+          if (!isActive) {
+            var btn = document.createElement('button');
+            btn.className = 'btn btn-primary';
+            btn.style.marginTop = '12px';
+            btn.textContent = 'Switch to ' + svc.name;
+            btn.addEventListener('click', function() {
+              switchSubscription(svc.id, svc.name);
+            });
+            option.appendChild(btn);
+          } else {
+            var tag = document.createElement('p');
+            tag.style.marginTop = '12px';
+            tag.style.color = '#e50914';
+            tag.style.fontWeight = '600';
+            tag.textContent = 'Current plan';
+            option.appendChild(tag);
+          }
+
+          selectEl.appendChild(option);
+        });
+      } catch (err) {
+        tiersEl.innerHTML = '<p class="error">Cannot reach the server.</p>';
+      }
+    }
+
+    async function switchSubscription(newServiceId, serviceName) {
+      var statusEl = document.getElementById('status');
+      statusEl.textContent = '';
+
+      if (!currentSub) return;
+
+      try {
+        var res = await fetch(API + '/subscriptions/' + currentSub.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: newServiceId,
+            billing_period: currentSub.billing_period
+          })
+        });
+
+        if (!res.ok) {
+          var err = await res.json();
+          statusEl.textContent = err.error || 'Failed to switch subscription.';
+          return;
+        }
+
+        // Reload the page to reflect the change
+        await loadProfile();
+        await loadTiers();
+      } catch (err) {
+        statusEl.textContent = 'Cannot reach the server.';
+      }
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

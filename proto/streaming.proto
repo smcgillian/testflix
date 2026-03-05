@@ -1,0 +1,33 @@
+syntax = "proto3";
+package streaming;
+option go_package = "github.com/testflix/proto;proto";
+
+message Service {
+  int64 id = 1;
+  string name = 2;
+  string type = 3; // "premium" or "standard"
+}
+
+message Media {
+  int64 id = 1;
+  string title = 2;
+  int32 media_type_id = 3; // FK to media_types: 1=movie, 2=tvshow
+  string description = 4;
+  int32 duration_seconds = 5;
+  string genre = 6;
+  int32 classification_id = 7; // FK to classifications: 1=U, 2=PG, 3=PG-13, 4=R
+}
+
+message Customer {
+  int64 id = 1;
+  string username = 2;
+}
+
+message Subscription {
+  int64 id = 1;
+  int64 customer_id = 2;
+  int64 service_id = 3;
+  string started_at = 4; // ISO timestamp
+  string expires_at = 5; // ISO timestamp
+  int32 billing_period = 6; // 1=monthly, 2=yearly
+}

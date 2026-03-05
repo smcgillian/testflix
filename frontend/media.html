@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestFlix — Title</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div id="media-detail" class="media-detail">
+      <p class="loading">Loading...</p>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireLogin();
+    renderNav('detail');
+
+    (async function() {
+      var detail = document.getElementById('media-detail');
+      var params = new URLSearchParams(window.location.search);
+      var id = params.get('id');
+
+      if (!id) {
+        detail.innerHTML = '<p class="error">No media ID specified.</p>';
+        return;
+      }
+
+      try {
+        var res = await fetch(API + '/media/' + encodeURIComponent(id));
+        if (res.status === 404) {
+          detail.innerHTML = '<p class="error">Title not found.</p>';
+          return;
+        }
+        if (!res.ok) {
+          detail.innerHTML = '<p class="error">Failed to load title.</p>';
+          return;
+        }
+        var body = await res.json();
+        var m = body.data;
+
+        document.title = 'TestFlix — ' + m.title;
+
+        detail.innerHTML =
+          '<h1>' + escapeHtml(m.title) + '</h1>' +
+          '<div class="meta">' +
+            '<span>' + escapeHtml(m.media_type) + '</span>' +
+            '<span>' + escapeHtml(m.genre) + '</span>' +
+            (m.classification ? '<span>' + escapeHtml(m.classification) + '</span>' : '') +
+            (m.duration_seconds ? '<span>' + formatDuration(m.duration_seconds) + '</span>' : '') +
+          '</div>' +
+          (m.description ? '<p class="description">' + escapeHtml(m.description) + '</p>' : '') +
+          '<div class="services">Available on: ' + m.services.map(escapeHtml).join(', ') + '</div>' +
+          '<button class="btn btn-primary" disabled title="Not available in this demo">&#9654; Play</button>' +
+          '<br><br><a href="/index.html">&larr; Back to titles</a>';
+      } catch (err) {
+        detail.innerHTML = '<p class="error">Cannot reach the server.</p>';
+      }
+    })();
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

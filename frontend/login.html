@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestFlix — Login</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="logo">TESTFLIX</div>
+    <div class="login-box">
+      <h1>Sign In</h1>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Enter your username" autocomplete="off" required>
+        <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+      </form>
+      <div id="error" class="error"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    // If already logged in, go to media list
+    if (getUsername()) {
+      window.location.href = '/index.html';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      var username = document.getElementById('username').value.trim();
+      if (!username) return;
+
+      try {
+        var res = await fetch(API + '/customers/' + encodeURIComponent(username));
+        if (res.status === 404) {
+          errorEl.textContent = 'Username not found.';
+          return;
+        }
+        if (!res.ok) {
+          errorEl.textContent = 'Something went wrong. Please try again.';
+          return;
+        }
+        sessionStorage.setItem('testflix_username', username);
+        window.location.href = '/index.html';
+      } catch (err) {
+        errorEl.textContent = 'Cannot reach the server.';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TestFlix — Browse</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Your Titles</h1>
+    <div id="media-grid" class="media-grid">
+      <p class="loading">Loading...</p>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireLogin();
+    renderNav('list');
+
+    (async function() {
+      var grid = document.getElementById('media-grid');
+      try {
+        var res = await fetch(API + '/media?username=' + encodeURIComponent(getUsername()));
+        if (!res.ok) {
+          grid.innerHTML = '<p class="error">Failed to load media.</p>';
+          return;
+        }
+        var body = await res.json();
+        var items = body.data;
+
+        if (!items || items.length === 0) {
+          grid.innerHTML = '<p>No titles available for your subscription.</p>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        items.forEach(function(item) {
+          var card = document.createElement('a');
+          card.href = '/media.html?id=' + item.id;
+          card.className = 'media-card';
+          card.innerHTML =
+            '<h3>' + escapeHtml(item.title) + '</h3>' +
+            '<div class="meta">' +
+              '<span>' + escapeHtml(item.media_type) + '</span>' +
+              '<span>' + escapeHtml(item.genre) + '</span>' +
+              (item.classification ? '<span>' + escapeHtml(item.classification) + '</span>' : '') +
+              (item.duration_seconds ? '<span>' + formatDuration(item.duration_seconds) + '</span>' : '') +
+            '</div>';
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        grid.innerHTML = '<p class="error">Cannot reach the server.</p>';
+      }
+    })();
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
